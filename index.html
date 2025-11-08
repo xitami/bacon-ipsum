@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Bacon Ipsum - A meatier lorem ipsum generator for all your filler text needs">
+    <title>Bacon Ipsum - A Meatier Lorem Ipsum Generator</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <img src="https://baconipsum.com/wp-content/uploads/2011/06/bacon-ipsum-banner1.jpg" 
+                 alt="Bacon Ipsum" 
+                 class="logo"
+                 onerror="this.style.display='none'">
+            <h1>🥓 Bacon Ipsum</h1>
+            <p class="subtitle">A Meatier Lorem Ipsum Generator</p>
+        </header>
+
+        <div class="card">
+            <form id="baconForm">
+                <div class="form-group">
+                    <label>Type of Filler:</label>
+                    <div class="radio-group">
+                        <div class="radio-option">
+                            <input type="radio" id="meatAndFiller" name="type" value="meat-and-filler" checked>
+                            <label for="meatAndFiller">Meat and Filler</label>
+                        </div>
+                        <div class="radio-option">
+                            <input type="radio" id="allMeat" name="type" value="all-meat">
+                            <label for="allMeat">All Meat</label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Output Format:</label>
+                    <div class="radio-group">
+                        <div class="radio-option">
+                            <input type="radio" id="formatParas" name="format" value="paragraphs" checked>
+                            <label for="formatParas">Paragraphs</label>
+                        </div>
+                        <div class="radio-option">
+                            <input type="radio" id="formatSentences" name="format" value="sentences">
+                            <label for="formatSentences">Sentences</label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <div class="input-row">
+                        <div>
+                            <label for="numParas">Number of Paragraphs:</label>
+                            <input type="number" id="numParas" min="1" max="100" value="5">
+                        </div>
+                        <div>
+                            <label for="numSentences">Number of Sentences:</label>
+                            <input type="number" id="numSentences" min="1" max="100" value="5" disabled>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="startWithLorem" checked>
+                        <label for="startWithLorem">Start with "Bacon ipsum dolor sit amet..."</label>
+                    </div>
+                </div>
+
+                <div class="button-group">
+                    <button type="submit" class="btn-primary">Generate Bacon Ipsum</button>
+                    <button type="button" id="copyBtn" class="btn-secondary" disabled>Copy to Clipboard</button>
+                </div>
+            </form>
+        </div>
+
+        <div class="card">
+            <div id="output"></div>
+        </div>
+
+        <footer>
+            <p>
+                Made with 🥓 by <a href="https://github.com/petenelson" target="_blank">Pete Nelson (@GunGeekATX)</a>
+                <br>
+                <a href="https://github.com/xitami/bacon-ipsum" target="_blank">View on GitHub</a>
+            </p>
+        </footer>
+    </div>
+
+    <div id="toast" class="toast">Copied to clipboard!</div>
+
+    <script src="bacon-ipsum-generator.js"></script>
+    <script>
+        const generator = new BaconIpsumGenerator();
+        const form = document.getElementById('baconForm');
+        const output = document.getElementById('output');
+        const copyBtn = document.getElementById('copyBtn');
+        const toast = document.getElementById('toast');
+        const formatRadios = document.querySelectorAll('input[name="format"]');
+        const numParasInput = document.getElementById('numParas');
+        const numSentencesInput = document.getElementById('numSentences');
+
+        // Handle format change
+        formatRadios.forEach(radio => {
+            radio.addEventListener('change', (e) => {
+                if (e.target.value === 'paragraphs') {
+                    numParasInput.disabled = false;
+                    numSentencesInput.disabled = true;
+                } else {
+                    numParasInput.disabled = true;
+                    numSentencesInput.disabled = false;
+                }
+            });
+        });
+
+        // Generate bacon ipsum
+        form.addEventListener('submit', (e) => {
+            e.preventDefault();
+            
+            const type = document.querySelector('input[name="type"]:checked').value;
+            const format = document.querySelector('input[name="format"]:checked').value;
+            const startWithLorem = document.getElementById('startWithLorem').checked;
+            
+            let paragraphs;
+            
+            if (format === 'paragraphs') {
+                const numParas = parseInt(numParasInput.value) || 5;
+                paragraphs = generator.makeSomeMeatyFiller(type, numParas, startWithLorem, 0);
+            } else {
+                const numSentences = parseInt(numSentencesInput.value) || 5;
+                paragraphs = generator.makeSomeMeatyFiller(type, 1, startWithLorem, numSentences);
+            }
+            
+            // Display output
+            output.innerHTML = paragraphs.map(p => `<p>${p}</p>`).join('');
+            copyBtn.disabled = false;
+            
+            // Scroll to output
+            output.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        });
+
+        // Copy to clipboard
+        copyBtn.addEventListener('click', async () => {
+            const text = Array.from(output.querySelectorAll('p'))
+                .map(p => p.textContent)
+                .join('\n\n');
+            
+            try {
+                await navigator.clipboard.writeText(text);
+                showToast();
+            } catch (err) {
+                // Fallback for older browsers
+                const textarea = document.createElement('textarea');
+                textarea.value = text;
+                textarea.style.position = 'fixed';
+                textarea.style.opacity = '0';
+                document.body.appendChild(textarea);
+                textarea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textarea);
+                showToast();
+            }
+        });
+
+        function showToast() {
+            toast.classList.add('show');
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, 2000);
+        }
+
+        // Generate initial content on page load
+        window.addEventListener('load', () => {
+            form.dispatchEvent(new Event('submit'));
+        });
+    </script>
+</body>
+</html>
